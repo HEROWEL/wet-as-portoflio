@@ -1,0 +1,121 @@
+#include <Adafruit_NeoPixel.h>
+
+#include<LiquidCrystal.h>
+
+LiquidCrystal lcd(A0, A1, 5, 4, 3, 2);
+
+int trigPin = 7;
+int echoPin = 6;
+unsigned long duration;
+int distance;
+int buzzerPin=13;
+int pirPin =12;
+int isHuman =0;
+int ledPin = 9;
+int ledNo = 12 ; 
+int vibratorPin = 8;
+
+
+Adafruit_NeoPixel strip= Adafruit_NeoPixel(ledNo,ledPin,NEO_RGB+NEO_KHZ800);
+
+
+
+void setup()
+{
+  pinMode(vibratorPin, OUTPUT);
+  pinMode(trigPin, OUTPUT);
+  pinMode (echoPin, INPUT);
+  pinMode(buzzerPin, OUTPUT);
+  pinMode(pirPin, INPUT);
+  Serial.begin(9600);
+  lcd.begin(16, 2); 
+  lcd.setCursor(4,0);   //this would be printed when device is on
+  lcd.print("COVID-19"); 
+  lcd.setCursor(0,1);
+  lcd.print("Dist. Indicator");
+  delay(2000);
+  lcd.clear();
+  strip.begin();
+  strip.show();
+}
+
+
+void loop()
+{
+  
+  isHuman = digitalRead(pirPin);
+  Serial.println(isHuman);
+  if (isHuman ==1){
+    
+	digitalWrite(trigPin, LOW);
+ 	delayMicroseconds(2);
+  //clearing the trigger
+  	digitalWrite(trigPin, HIGH);
+  	delayMicroseconds(10);
+  	digitalWrite(trigPin, LOW);
+  
+  // capturing the time duration for sound wave to travel in microseconds
+  	duration = pulseIn(echoPin, HIGH);
+  	distance = 0.01723 * duration;
+  	Serial.print(distance);
+  	Serial.println("cm");
+    
+    if  (isHuman == 1 && distance < 200 ){
+    
+  
+    digitalWrite(vibratorPin,HIGH);
+    tone(buzzerPin,293);
+    lcd.clear();
+    lcd.setCursor(0,0);          
+  	lcd.print("  STAY AWAY!!"); 
+  	lcd.setCursor(5,1);           
+  	lcd.print(distance);
+    lcd.print("cm");  
+    delay(200);    
+    noTone(buzzerPin);
+    lcd.clear();
+    colorWipe(strip.Color(0, 255, 0), 1); // red    
+
+  }
+
+  else {
+  
+    digitalWrite(vibratorPin,LOW);
+    lcd.setCursor(2,0);          
+  	lcd.print("You are safe"); 
+  	lcd.setCursor(6,1);           
+  	lcd.print(distance);
+    lcd.print("cm");
+    colorWipe(strip.Color(255, 0, 0), 800); // green
+    
+  }  
+
+  }  
+
+}
+ // Fill the dots one after the other with a color
+void colorWipe(uint32_t c, uint8_t wait) {
+  for(uint16_t i=0; i<strip.numPixels(); i++) {
+    strip.setPixelColor(i, c);
+    strip.show();
+    delay(wait);
+  }
+}
+
+//Theatre-style crawling lights.
+void theaterChase(uint32_t c, uint8_t wait) {
+  for (int j=0; j<10; j++) {  //do 10 cycles of chasing
+    for (int q=0; q < 3; q++) {
+      for (uint16_t i=0; i < strip.numPixels(); i=i+3) {
+        strip.setPixelColor(i+q, c);    //turn every third pixel on
+      }
+      strip.show();
+
+      delay(wait);
+
+      for (uint16_t i=0; i < strip.numPixels(); i=i+3) {
+        strip.setPixelColor(i+q, 0);        //turn every third pixel off
+      }
+    }
+  } 
+}
